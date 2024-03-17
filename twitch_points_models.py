@@ -37,9 +37,7 @@ class TwitchPointsModels:
     def construct_model(self, streamer):
         dates, points = concatenate_data(streamer.dates, streamer.points)
         # dates, points = streamer.dates, streamer.points
-        print(streamer.name)
-        print([str(date) for date in dates])
-        print(points)
+
         timestamps = [date.timestamp() for date in dates]
         X = np.array(timestamps).reshape(-1, 1)
         y = np.array(points).reshape(-1, 1)

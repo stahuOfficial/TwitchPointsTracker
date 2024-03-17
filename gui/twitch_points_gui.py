@@ -2,6 +2,7 @@ import tkinter as tk
 from datetime import datetime
 from tkinter import messagebox
 from tkinter import ttk
+from PIL import Image, ImageTk
 
 from gui.twitch_points_table import TwitchPointsTable
 from twitch_points_list import Streamer
@@ -25,11 +26,13 @@ def on_focus_out(event):
 
 
 class TwitchPointsGUI:
-    def __init__(self, twitch_points_list, models: TwitchPointsModels):
-        self.open_file = None
+    def __init__(self, twitch_points_list, models):
         self.window = tk.Tk()
         self.window.title("Twitch Points")
-        self.window.geometry("500x600")
+        self.window.geometry("1200x600")
+
+        self.twitch_points_list = twitch_points_list
+        self.twitch_points_models = models
 
         self.current_file = "twitch_points.csv"
 
@@ -47,42 +50,70 @@ class TwitchPointsGUI:
         style.map('.', background=[('selected', 'black')], foreground=[('selected', 'white')])
         style.map('Treeview', background=[('selected', '#4A6984')], foreground=[('selected', 'white')])
 
-        self.table = TwitchPointsTable(self.window, self.twitch_points_list)
-        self.table.refresh_table()
-        self.table.treeview.pack()
+        top_streamer = self.twitch_points_list.streamers[0]
+        for streamer in self.twitch_points_list.streamers:
+            if streamer.points[-1] > top_streamer.points[-1]:
+                top_streamer = streamer
 
-        # Buttons
-        button_frame = tk.Frame(self.window, bg="#383838")
+        self.plotted_streamer = top_streamer
+
+        # Create the TwitchPointsTable instance
+        self.table = TwitchPointsTable(self.window, self.twitch_points_list)
+        self.plot_frame, plot_img_tk = self.create_streamer_plot(self.plotted_streamer)
+        self.plot_frame.grid(row=0, column=1, sticky="nsew")
+
+        # Set up the grid layout
+        self.window.grid_columnconfigure(0, minsize=452)
+        self.window.grid_columnconfigure(1, minsize=100)
+        self.window.grid_rowconfigure(0, minsize=420)
+        self.window.grid_rowconfigure(1, minsize=100)
+
+        self.table.treeview.grid(row=0, column=0, columnspan=1)
+
+        # Create the bottom left frame
+        bottom_left_frame = tk.Frame(self.window, bg="#383838")
+        bottom_left_frame.grid(row=1, column=0, sticky="nsew")
+
+        # Create the button frame within the bottom left frame
+        button_frame = tk.Frame(bottom_left_frame, bg="#383838")
         button_frame.pack()
 
-        add_frame = tk.Frame(self.window, bg="#383838")
+        # Create the add frame within the bottom left frame
+        add_frame = tk.Frame(bottom_left_frame, bg="#383838")
         add_frame.pack()
 
         # Delete button
         delete_button = tk.Button(button_frame, text="Delete", command=self.delete_streamer, bg="#383838", fg="white")
         delete_button.pack()
 
+        # Name label and entry
         name_label = tk.Label(add_frame, text="Name", bg="#383838", fg="white")
         name_label.pack()
         self.name_entry = tk.Entry(add_frame, bg="#383838", fg="white")
         self.name_entry.pack()
 
+        # Points label and entry
         points_label = tk.Label(add_frame, text="Points", bg="#383838", fg="white")
         points_label.pack()
         self.points_entry = tk.Entry(add_frame, bg="#383838", fg="white")
         self.points_entry.pack()
 
+        # Target label and entry
         target_label = tk.Label(add_frame, text="Target", bg="#383838", fg="white")
         target_label.pack()
         self.target_entry = tk.Entry(add_frame, bg="#383838", fg="white")
         self.target_entry.pack()
 
-        # create add button
+        # Add button
         add_button = tk.Button(add_frame, text="Add", command=self.add_streamer, bg="#383838", fg="white")
         add_button.pack()
 
-        self.table.treeview.bind("<Double-1>", self.on_click)
+        self.table.treeview.bind("<Button-1>", self.on_click)
+        self.table.treeview.bind("<Double-1>", self.on_double_click)
 
+        self.window.focus_set()
+
+        # Display the GUI
         self.window.mainloop()
 
     def run(self):
@@ -119,6 +150,15 @@ class TwitchPointsGUI:
             self.twitch_points_list.save_to_file(self.current_file)
 
     def on_click(self, event):
+        region_clicked = self.table.treeview.identify("region", event.x, event.y)
+        if region_clicked != "cell":
+            return
+        row_id = self.table.treeview.identify_row(event.y)
+        row = self.table.treeview.item(row_id)["values"]
+        self.plotted_streamer = self.twitch_points_list.get_entry(row[1])
+        self.refresh_plot(self.plotted_streamer)
+
+    def on_double_click(self, event):
         region_clicked = self.table.treeview.identify("region", event.x, event.y)
         if region_clicked != "cell":
             return
@@ -162,5 +202,38 @@ class TwitchPointsGUI:
             self.twitch_points_list.save_to_file(self.current_file)
         self.table.refresh_df()
         self.table.refresh_table()
+        self.refresh_plot(self.plotted_streamer)
 
         event.widget.destroy()
+
+    def create_streamer_plot(self, streamer, height_px=420):
+        # Create a frame for the plot
+        plot_frame = tk.Frame(self.window, bg="#383838")
+        model = self.twitch_points_models.models[streamer]
+
+        # Create the Matplotlib plot
+        plot_buffer = streamer.get_plot(model, height_px, background_color="#383838")  # Assuming get_plot() returns the image buffer
+        plot_img = Image.open(plot_buffer)
+        plot_img_tk = ImageTk.PhotoImage(plot_img)
+
+        # Create a Canvas widget to display the plot
+        canvas = tk.Canvas(plot_frame, bg="#ffffff", width=plot_img.width, height=plot_img.height, highlightthickness=0)
+        canvas.pack(expand=True, fill="both")
+
+        # Display the plot image on the canvas
+        canvas.create_image(0, 0, anchor="nw", image=plot_img_tk)
+
+        # Return the plot frame and plot image Tk object
+        return plot_frame, plot_img_tk
+
+    def refresh_plot(self, streamer, height_px=420):
+        # Create a new plot frame for the updated streamer
+        new_plot_frame, new_plot_img_tk = self.create_streamer_plot(streamer, height_px)
+        new_plot_frame.grid(row=0, column=1, sticky="nsew")
+
+        # Destroy the old plot frame
+        self.plot_frame.destroy()
+
+        # Update the reference to the new plot frame and plot image Tk object
+        self.plot_frame = new_plot_frame
+        self.plot_img_tk = new_plot_img_tk

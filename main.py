@@ -1,4 +1,6 @@
 import os
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 
 from twitch_points_models import TwitchPointsModels
 from twitch_points_list import TwitchPointsList
@@ -17,9 +19,6 @@ def main():
         twitch_points_models.load_models()
     else:
         twitch_points_models = TwitchPointsModels()
-
-    print(twitch_points_models)
-    print(twitch_points_models.models)
 
     for streamer in twitch_points.streamers:
         if streamer not in twitch_points_models.models:
