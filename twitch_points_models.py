@@ -6,18 +6,26 @@ from sklearn.linear_model import LinearRegression
 from datetime import datetime
 
 
-# Return only the last entry on each day
 def concatenate_data(dates, points):
-    dates = sorted(dates)
-    result_dates = [dates[0]]
-    result_points = [points[0]]
-    for i in range(1, len(dates)):
-        if dates[i].date() != dates[i - 1].date():
-            result_dates.append(dates[i])
-            result_points.append(points[i])
-        else:
-            result_dates[-1] = dates[i]
-            result_points[-1] = points[i]
+    # Combine dates and points into tuples for easy sorting
+    combined_data = list(zip(dates, points))
+
+    # Get today's date
+    today = datetime.now().date()
+
+    # Initialize lists to store result
+    result_dates = []
+    result_points = []
+
+    # Iterate over combined data
+    for date, point in combined_data:
+        # Calculate the difference in days between today and the date
+        delta_days = (today - date.date()).days
+        # If the difference is less than or equal to 30 days, include the data
+        if delta_days <= 30:
+            result_dates.append(date)
+            result_points.append(point)
+
     return result_dates, result_points
 
 
@@ -30,7 +38,7 @@ class TwitchPointsModels:
         dates, points = concatenate_data(streamer.dates, streamer.points)
         # dates, points = streamer.dates, streamer.points
         print(streamer.name)
-        print([date.strftime("%Y-%m-%d") for date in dates])
+        print([str(date) for date in dates])
         print(points)
         timestamps = [date.timestamp() for date in dates]
         X = np.array(timestamps).reshape(-1, 1)
