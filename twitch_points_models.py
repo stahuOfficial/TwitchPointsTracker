@@ -1,3 +1,5 @@
+from collections import deque
+
 import joblib
 import numpy as np
 
@@ -9,22 +11,30 @@ from datetime import datetime
 def concatenate_data(dates, points):
     # Combine dates and points into tuples for easy sorting
     combined_data = list(zip(dates, points))
+    # Sort combined data by dates in descending order
+    combined_data.sort(reverse=True)
 
-    # Get today's date
-    today = datetime.now().date()
-
-    # Initialize lists to store result
+    # Use a deque to store unique dates
+    unique_dates = deque(maxlen=30)
     result_dates = []
     result_points = []
 
-    # Iterate over combined data
     for date, point in combined_data:
-        # Calculate the difference in days between today and the date
-        delta_days = (today - date.date()).days
-        # If the difference is less than or equal to 30 days, include the data
-        if delta_days <= 30:
+        # Check if the date is not in the deque already
+        if date.date() not in unique_dates:
+            # Append the date and point to the result lists
             result_dates.append(date)
             result_points.append(point)
+            # Append the date to the deque
+            unique_dates.append(date.date())
+
+        # Break the loop if we have already collected 30 unique dates
+        if len(unique_dates) == 30:
+            break
+
+    # Reverse the lists to maintain the original order
+    result_dates.reverse()
+    result_points.reverse()
 
     return result_dates, result_points
 
@@ -36,7 +46,9 @@ class TwitchPointsModels:
 
     def construct_model(self, streamer):
         dates, points = concatenate_data(streamer.dates, streamer.points)
-        # dates, points = streamer.dates, streamer.points
+        print(streamer.name)
+        print(dates)
+        print(points)
 
         timestamps = [date.timestamp() for date in dates]
         X = np.array(timestamps).reshape(-1, 1)
