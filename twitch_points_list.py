@@ -85,9 +85,19 @@ class Streamer:
         self.dates = [date]
         self.target = target
 
+    def add_entry(self, points, date):
+        self.points.append(points)
+        self.dates.append(date)
+
+    def edit(self, points=None, target=None):
+        if points is not None:
+            self.add_entry(points, str(datetime.now()))
+        if target is not None:
+            self.target = target
+
     def get_plot(self, model=None, height_px=450, background_color='#2b2b2b'):
         # Calculate the width based on the desired height and the aspect ratio (16:9)
-        width_px = int(height_px * (16/9))
+        width_px = int(height_px * (16 / 9))
 
         # Convert width and height from pixels to inches
         width_in = width_px / 100
@@ -120,11 +130,22 @@ class Streamer:
         ax.set_title(f'Points Over Time - {self.name}', color='white')  # Set the color of the title
 
         # Set y-axis ticks and labels
-        ax.set_yticks(self.points)
-        ax.set_yticklabels(formatted_points)
+        num_ticks = 5  # Set the desired number of ticks
+        tick_positions = np.linspace(min(self.points), max(self.points), num_ticks)
+        ax.set_yticks(tick_positions)
+        ax.set_yticklabels([formatted_points[int(i)] for i in np.linspace(0, len(formatted_points) - 1, num_ticks)])
 
         # Set legend
         ax.legend()
+
+        # Add text annotation for target
+        formatted_date = self.est_date.strftime('%Y-%m-%d') if self.est_date else 'N/A'
+        ax.text(0, 1.047, f'Target: {format(self.target, ",").replace(",", " ")}\nEst. date: {formatted_date}',
+                horizontalalignment='left',
+                verticalalignment='center',
+                transform=ax.transAxes,
+                fontsize=8,
+                color='lightgray')
 
         # Set the background color of the plot
         ax.set_facecolor(background_color)  # Use a dark background color
@@ -139,16 +160,6 @@ class Streamer:
         plt.close(fig)
 
         return buf
-
-    def add_entry(self, points, date):
-        self.points.append(points)
-        self.dates.append(date)
-
-    def edit(self, points=None, target=None):
-        if points is not None:
-            self.add_entry(points, str(datetime.now()))
-        if target is not None:
-            self.target = target
 
     def __str__(self):
         return str(self.name) + " " + str(self.points) + " " + str(self.dates) + " " + str(self.target)

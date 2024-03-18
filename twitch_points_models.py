@@ -45,6 +45,15 @@ class TwitchPointsModels:
         self.models: dict = {}
 
     def construct_model(self, streamer):
+        """
+        Construct a linear regression model for the given streamer.
+        The model operates on the last 30 days of data.
+        Model employs a strategy of utilizing only the most recent entry per day.
+        This approach helps prevent disproportionate emphasis on days with numerous small entries
+         followed by periods of inactivity.
+        :param streamer:
+        :return:
+        """
         dates, points = concatenate_data(streamer.dates, streamer.points)
         print(streamer.name)
         print(dates)

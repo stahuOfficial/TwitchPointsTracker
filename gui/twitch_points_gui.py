@@ -111,9 +111,9 @@ class TwitchPointsGUI:
         self.table.treeview.bind("<Button-1>", self.on_click)
         self.table.treeview.bind("<Double-1>", self.on_double_click)
 
-        self.window.focus_set()
-
         # Display the GUI
+        self.window.lift()
+        self.window.focus_force()
         self.window.mainloop()
 
     def run(self):
