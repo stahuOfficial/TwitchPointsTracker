@@ -50,17 +50,20 @@ class TwitchPointsGUI:
         style.map('.', background=[('selected', 'black')], foreground=[('selected', 'white')])
         style.map('Treeview', background=[('selected', '#4A6984')], foreground=[('selected', 'white')])
 
-        top_streamer = self.twitch_points_list.streamers[0]
-        for streamer in self.twitch_points_list.streamers:
-            if streamer.points[-1] > top_streamer.points[-1]:
-                top_streamer = streamer
+        top_streamer = None
+        if len(self.twitch_points_list.streamers) > 0:
+            top_streamer = self.twitch_points_list.streamers[0]
+            for streamer in self.twitch_points_list.streamers:
+                if streamer.points[-1] > top_streamer.points[-1]:
+                    top_streamer = streamer
 
         self.plotted_streamer = top_streamer
 
         # Create the TwitchPointsTable instance
         self.table = TwitchPointsTable(self.window, self.twitch_points_list)
-        self.plot_frame, plot_img_tk = self.create_streamer_plot(self.plotted_streamer)
-        self.plot_frame.grid(row=0, column=1, sticky="nsew")
+        if self.plotted_streamer:
+            self.plot_frame, plot_img_tk = self.create_streamer_plot(self.plotted_streamer)
+            self.plot_frame.grid(row=0, column=1, sticky="nsew")
 
         # Set up the grid layout
         self.window.grid_columnconfigure(0, minsize=452)

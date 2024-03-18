@@ -38,8 +38,9 @@ class TwitchPointsList:
         with open(filename, 'w', newline='') as file:
             writer = csv.writer(file)
             for streamer in self.streamers:
-                for i in range(len(streamer.points)):
-                    writer.writerow([streamer.name, streamer.points[i], streamer.dates[i], streamer.target])
+                writer.writerow([streamer.name, streamer.points[0], streamer.dates[0], streamer.target])
+                for i in range(1, len(streamer.points)):
+                    writer.writerow([streamer.name, streamer.points[i], streamer.dates[i]])
 
     def load_from_file(self, filename):
         with open(filename, 'r') as file:
