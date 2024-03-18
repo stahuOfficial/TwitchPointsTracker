@@ -64,6 +64,7 @@ class TwitchPointsTable:
         self.down_triangle = tk.PhotoImage(file="gui/down_triangle.png")
 
         self.current_sort_column = "percentage"
+        self.sort_ascending = False
 
         # Streamers table
         self.treeview = ttk.Treeview(self.window, columns=("#", "name", "points", "target", "percentage", "est_date"),
@@ -98,16 +99,13 @@ class TwitchPointsTable:
         self.treeview.heading("est_date", text=self.column_names["est_date"], anchor=tk.W,
                               command=lambda: self.sort_column("est_date"))
 
-        self.sort_order = {"#": True, "name": True, "points": True, "target": True, "percentage": False,
-                           "est_date": True}
-
         self.treeview.focus_set()
 
         self.refresh_table()
 
     def refresh_table(self):
         self.treeview.delete(*self.treeview.get_children())
-        self.df = self.df.sort_values(by=self.current_sort_column, ascending=self.sort_order[self.current_sort_column])
+        self.df = self.df.sort_values(by=self.current_sort_column, ascending=self.sort_ascending)
         for i, entry in enumerate(self.df.itertuples(), start=1):
             user = entry.name
             points = entry.points
@@ -121,7 +119,8 @@ class TwitchPointsTable:
                                                     user,
                                                     format(points, ',').replace(',', ' '),
                                                     format(target, ',').replace(',', ' '),
-                                                    format(percentage, '.2f') + "%", est_date),
+                                                    format(percentage, '.2f') + "%",
+                                                    est_date),
                                  tags=(color,))
         # Configure the tags to set the background color
         for color in colors:
@@ -131,9 +130,12 @@ class TwitchPointsTable:
         self.df = self.twitch.to_df()
 
     def sort_column(self, column):
-        self.df = self.df.sort_values(by=column, ascending=self.sort_order[column])
+        if column == self.current_sort_column:
+            self.sort_ascending = not self.sort_ascending
+        else:
+            self.sort_ascending = False
+        self.df = self.df.sort_values(by=column, ascending=self.sort_ascending)
         self.current_sort_column = column
-        self.sort_order[column] = not self.sort_order[column]
 
         # Update the table widget with the sorted data
         self.refresh_table()
@@ -141,7 +143,7 @@ class TwitchPointsTable:
         # Update the column headings with sort arrows
         for col in self.treeview["columns"]:
             if col == column:
-                if self.sort_order[column]:
+                if self.sort_ascending:
                     self.treeview.heading(col, image=self.up_triangle, text=self.column_names[col])
                 else:
                     self.treeview.heading(col, image=self.down_triangle, text=self.column_names[col])
