@@ -55,9 +55,6 @@ class TwitchPointsModels:
         :return:
         """
         dates, points = concatenate_data(streamer.dates, streamer.points)
-        print(streamer.name)
-        print(dates)
-        print(points)
 
         timestamps = [date.timestamp() for date in dates]
         X = np.array(timestamps).reshape(-1, 1)
@@ -84,9 +81,9 @@ class TwitchPointsModels:
         return model.predict([[date.timestamp()]])
 
     def when_target(self, streamer):
-        if len(streamer.dates) == 1:
-            return datetime.max
         model = self.models[streamer]
+        if model.coef_ == 0:
+            return datetime.max
         w = model.coef_
         b = model.intercept_
         target = streamer.target

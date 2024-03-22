@@ -9,6 +9,25 @@ from matplotlib import pyplot as plt
 from matplotlib import dates as mdates
 
 
+def evenly_spaced_list(a, b, num_elements):
+    step = (b - a) / (num_elements - 1) if num_elements > 1 else 0
+    return [a + i * step for i in range(num_elements)]
+
+
+def concatenate_dates(dates):
+    """
+    Concatenate dates that are on the same day.
+    :param dates: list of dates
+    :return: list of dates with the same date concatenated
+    """
+    unique_dates = []
+    reversed_dates = dates[::-1]
+    for date in reversed_dates:
+        if date.date() not in [unique_date.date() for unique_date in unique_dates]:
+            unique_dates.append(date)
+    return unique_dates[::-1]
+
+
 class TwitchPointsList:
     streamers = []
 
@@ -63,15 +82,9 @@ class TwitchPointsList:
         for streamer in self.streamers:
             percentage = streamer.points[-1] / streamer.target * 100 if streamer.target is not None else None
             data.append(
-                [streamer, streamer.name, streamer.points[-1], streamer.target, percentage, str(streamer.est_date)])
+                [streamer, streamer.name, streamer.points[-1], streamer.target, percentage, streamer.est_date])
 
-        # Define column names
         columns = ["streamer_object", "name", "points", "target", "percentage", "est_date"]
-
-        # Define data types for each column
-        # dtypes = {"Name": str, "Points": int, "Target": int, "Est. Date": str}
-
-        # Create DataFrame with specified data types
         df = pd.DataFrame(data, columns=columns)
 
         return df
@@ -104,18 +117,25 @@ class Streamer:
         width_in = width_px / 100
         height_in = height_px / 100
 
-        # Format points labels
-        formatted_points = [f"{point:,}".replace(",", " ") for point in self.points]
-
-        # Create a dark-themed plot
         plt.style.use('dark_background')
 
         # Plotting
         fig, ax = plt.subplots(figsize=(width_in, height_in))
-        ax.plot(self.dates, self.points, marker='o', color='lightblue', label='Points')  # Plot points
+        ax.plot(self.dates, self.points,
+                marker='o',
+                color='lightblue',
+                label='Points',
+                markerfacecolor=background_color,
+                markeredgewidth=1.3)  # Plot points
 
-        # Plot linear regression line if model is provided
-        if model:
+        filled_points = [True if date in concatenate_dates(self.dates) else False for date in self.dates]
+        for i in range(len(self.dates)):
+            if filled_points[i]:
+                ax.plot(self.dates[i], self.points[i],
+                        marker='o',
+                        color='lightblue')
+
+        if model and model.coef_ != 0:
             x_values = np.array([date.timestamp() for date in self.dates]).reshape(-1, 1)
             y_values = model.predict(x_values)
             ax.plot(self.dates, y_values, linestyle='-', color='orange', label='Prediction')
@@ -123,25 +143,24 @@ class Streamer:
         # Format x-axis date labels
         date_fmt = mdates.DateFormatter('%m-%d')
         ax.xaxis.set_major_formatter(date_fmt)
-        fig.autofmt_xdate(rotation=45)  # Rotate x-axis labels for better readability
 
-        # Set labels for x-axis and y-axis
-        ax.set_xlabel('Date', color='white')  # Set the color of the axis labels
-        ax.set_ylabel('Points', color='white')  # Set the color of the axis labels
-        ax.set_title(f'Points Over Time - {self.name}', color='white')  # Set the color of the title
+        ax.set_xlabel('Date', color='white')
+        ax.set_ylabel('Points', color='white')
+        ax.set_title(f'Points Over Time - {self.name}', color='white')
 
-        # Set y-axis ticks and labels
-        num_ticks = 5  # Set the desired number of ticks
+        num_ticks = 5
         tick_positions = np.linspace(min(self.points), max(self.points), num_ticks)
         ax.set_yticks(tick_positions)
-        ax.set_yticklabels([formatted_points[int(i)] for i in np.linspace(0, len(formatted_points) - 1, num_ticks)])
+        ytick_labels = evenly_spaced_list(min(self.points), max(self.points), num_ticks)
+        ax.set_yticklabels([format(int(label), ",").replace(",", " ") for label in ytick_labels])
 
-        # Set legend
         ax.legend()
 
         # Add text annotation for target
-        formatted_date = self.est_date.strftime('%Y-%m-%d') if self.est_date else 'N/A'
-        ax.text(0, 1.047, f'Target: {format(self.target, ",").replace(",", " ")}\nEst. date: {formatted_date}',
+        formatted_date = self.est_date.strftime(
+            '%d-%m-%Y') if self.est_date and self.est_date != datetime.max else 'N/A'
+        ax.text(0, 1.047, f'Target: {format(self.target, ",").replace(",", " ")}\n'
+                          f'Est. date: {formatted_date}',
                 horizontalalignment='left',
                 verticalalignment='center',
                 transform=ax.transAxes,
@@ -154,7 +173,7 @@ class Streamer:
 
         # Save the plot to an in-memory buffer
         buf = io.BytesIO()
-        plt.savefig(buf, format='png', facecolor=fig.get_facecolor())  # Explicitly set facecolor
+        plt.savefig(buf, format='png', facecolor=fig.get_facecolor())
         buf.seek(0)
 
         # Clear the plot to release memory
@@ -163,7 +182,8 @@ class Streamer:
         return buf
 
     def __str__(self):
-        return str(self.name) + " " + str(self.points) + " " + str(self.dates) + " " + str(self.target)
+        return str(self.name) + " " + str(self.points) + " " + str([str(date) for date in self.dates]) \
+               + " " + str(self.target)
 
     def __eq__(self, other):
         return self.name == other.name

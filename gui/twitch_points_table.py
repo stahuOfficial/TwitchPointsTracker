@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
-
+from datetime import datetime
 from twitch_points_list import TwitchPointsList
 
 colors = ["orange red",
@@ -111,10 +111,9 @@ class TwitchPointsTable:
             points = entry.points
             target = entry.target
             percentage = entry.percentage
-            est_date = entry.est_date
-            # Determine the background color based on the percentage
+            est_date = entry.est_date.strftime('%H:%M:%S %d-%m-%Y') if entry.est_date != datetime.max else "N/A"
+
             color = colors[min(int(percentage / 10), len(colors) - 1)]
-            # Insert the row with the specified background color
             self.treeview.insert("", "end", values=(i,
                                                     user,
                                                     format(points, ',').replace(',', ' '),
@@ -122,7 +121,7 @@ class TwitchPointsTable:
                                                     format(percentage, '.2f') + "%",
                                                     est_date),
                                  tags=(color,))
-        # Configure the tags to set the background color
+
         for color in colors:
             self.treeview.tag_configure(color, background=color)
 
