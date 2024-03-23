@@ -1,6 +1,5 @@
 # TwitchPointsTracker
-
-TwitchPointsTracker is a Python program with a Tkinter GUI that helps you track your points on Twitch channels. It allows you to add streamers to a table, manually enter the points you have on their channels, and provides a visual representation of your points over time with a prediction of when you will achieve your points target using linear regression.
+A Python program with a Tkinter GUI that helps you track your Twitch points and estimates reaching targets with linear regression.
 
 ## Features
 
