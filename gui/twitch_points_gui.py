@@ -6,6 +6,7 @@ from PIL import Image, ImageTk
 
 from gui.twitch_points_table import TwitchPointsTable
 from twitch_points_list import Streamer
+from twitch_points_models import TwitchPointsModels
 
 
 def format_number(num, precision=2):
@@ -23,7 +24,6 @@ def format_number(num, precision=2):
 class TwitchPointsGUI:
     def __init__(self, twitch_points_list, models):
         self.window = tk.Tk()
-        self.window.iconbitmap("gui/twtracker.ico")
         self.window.title("Twitch Points")
         self.window.geometry("1200x600")
 

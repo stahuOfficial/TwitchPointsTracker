@@ -8,11 +8,11 @@ colors = ["orange red",
           "orange",
           "gold",
           "yellow",
+          "light yellow",
           "green yellow",
-          "lawn green",
+          "pale green",
+          "light green",
           "green2",
-          "green3",
-          "green4",
           "cyan2"]
 
 
