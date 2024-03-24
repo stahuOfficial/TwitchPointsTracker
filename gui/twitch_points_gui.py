@@ -25,6 +25,7 @@ class TwitchPointsGUI:
     def __init__(self, twitch_points_list, models):
         self.window = tk.Tk()
         self.window.title("Twitch Points")
+        self.window.iconbitmap("gui/twtracker.ico")
         self.window.geometry("1200x600")
 
         self.twitch_points_list = twitch_points_list
